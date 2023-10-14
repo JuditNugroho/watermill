@@ -100,6 +100,10 @@ func (f *FanOut) Running() chan struct{} {
 	return f.internalRouter.Running()
 }
 
+func (f *FanOut) IsClosed() bool {
+	return f.internalRouter.IsClosed()
+}
+
 // Subscribe starts subscription to the FanOut's internal Pub/Sub.
 func (f *FanOut) Subscribe(ctx context.Context, topic string) (<-chan *message.Message, error) {
 	return f.internalPubSub.Subscribe(ctx, topic)
@@ -107,5 +111,15 @@ func (f *FanOut) Subscribe(ctx context.Context, topic string) (<-chan *message.M
 
 // Close closes the FanOut's internal Pub/Sub.
 func (f *FanOut) Close() error {
-	return f.internalPubSub.Close()
+	var routerError error
+	var internalPubSubError error
+
+	if routerCloseErr := f.internalRouter.Close(); routerCloseErr != nil {
+		routerError = routerCloseErr
+	}
+	if internalPubSubCloseErr := f.internalPubSub.Close(); internalPubSubCloseErr != nil {
+		internalPubSubError = internalPubSubCloseErr
+	}
+
+	return fmt.Errorf("%v\n%v", routerError, internalPubSubError)
 }
