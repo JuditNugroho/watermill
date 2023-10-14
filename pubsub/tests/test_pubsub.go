@@ -28,10 +28,6 @@ import (
 
 var defaultTimeout = time.Second * 15
 
-func init() {
-	rand.Seed(3)
-}
-
 // TestPubSub is a universal test suite. Every Pub/Sub implementation should pass it
 // before it's considered production ready.
 //
@@ -569,11 +565,13 @@ func TestNoAck(
 		t.Fatal("messages channel should be unblocked after Ack()")
 	}
 
-	select {
-	case <-messages:
-		t.Fatal("msg should be not sent again")
-	case <-time.After(time.Millisecond * 50):
-		// ok
+	if tCtx.Features.ExactlyOnceDelivery {
+		select {
+		case <-messages:
+			t.Fatal("msg should be not sent again")
+		case <-time.After(time.Millisecond * 50):
+			// ok
+		}
 	}
 }
 
